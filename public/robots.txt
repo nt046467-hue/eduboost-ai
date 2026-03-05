@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /private/
+
+# Allow Google AdSense to crawl
+User-agent: Googlebot-Image
+Allow: /
+
+# Ads.txt location
+Comment: ads.txt file located at /ads.txt
+
+Sitemap: /sitemap.xml
