@@ -5,8 +5,13 @@ import { getAIResponse } from "../services/geminiService";
 interface Summary {
   id: string;
   fileName: string;
+  overview: string;
   summary: string;
+  mainConcepts: string[];
   keyPoints: string[];
+  definitions: Record<string, string>;
+  quickFacts: string[];
+  relatedTopics: string[];
   timestamp: Date;
 }
 
@@ -31,29 +36,35 @@ const PDFSummarizer: React.FC = () => {
     }
   };
 
+  // extract text from PDF using pdfjs-dist; this gives a real summary
+  // similar to how VideoSummarizer handles a video file, we pull the full
+  // transcript and send it to the AI so it has actual content to work with.
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    // For now, we'll use a basic text extraction method
-    // In production, you'd use pdfjs-dist
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    try {
+      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf");
+      // Vite requires worker path to be specified as an absolute URL
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        "pdfjs-dist/legacy/build/pdf.worker.js",
+        import.meta.url,
+      ).toString();
 
-      reader.onload = async (event) => {
-        try {
-          // Since we don't have pdfjs-dist installed, we'll provide a placeholder
-          // that tells the AI to work with the file name and handle it gracefully
-          const text = `PDF File: ${file.name}\nSize: ${(file.size / 1024).toFixed(2)}KB\n\nNote: This is a placeholder. For production, install pdfjs-dist to extract full text.`;
-          resolve(text);
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      reader.onerror = () => {
-        reject(new Error("Failed to read file"));
-      };
-
-      reader.readAsArrayBuffer(file);
-    });
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map((item: any) => item.str).join(" ");
+        fullText += pageText + "\n\n";
+      }
+      return fullText.trim();
+    } catch (error) {
+      console.error(
+        "PDF extraction failed, falling back to basic info:",
+        error,
+      );
+      return `PDF File: ${file.name}\nSize: ${(file.size / 1024).toFixed(2)}KB\n\n(Unable to extract text automatically)`;
+    }
   };
 
   const handleSummarize = async () => {
@@ -66,40 +77,87 @@ const PDFSummarizer: React.FC = () => {
       setExtractedText(text);
 
       // Get summary from AI
-      const prompt = `Please analyze this PDF and provide:
-1. A comprehensive summary (2-3 paragraphs)
-2. Key points in bullet form
-3. Important concepts explained simply
+      const prompt = `Please analyze this PDF and provide the following information in a student-friendly way:
+1. A one‑sentence **overview** of the document's main theme
+2. A comprehensive **summary** (2–3 paragraphs)
+3. A list of **main concepts** with very brief explanations
+4. A set of **key points** in bullet form
+5. Any important **definitions** mentioned in the text (object of term→definition)
+6. A few **quick facts** or takeaways
+7. **Related topics** or suggestions for further reading
 
-PDF Content: ${text}
+PDF Content:
+${text}
 
-Format your response as JSON with keys: "summary", "keyPoints" (array)`;
-
+Format your response EXACTLY as JSON using these keys:
+{
+  "overview": "...",
+  "summary": "...",
+  "mainConcepts": ["...", "..."],
+  "keyPoints": ["...", "..."],
+  "definitions": {"term1":"def1", ...},
+  "quickFacts": ["...", "..."],
+  "relatedTopics": ["...", "..."]
+}`;
       const response = await getAIResponse(
         prompt,
         "You are an expert summarizer. Extract key information and summarize content clearly for students.",
         true,
       );
 
-      let parsedResponse = { summary: "", keyPoints: [] };
+      // the AI is instructed to return a rich JSON object; fall back gracefully
+      let parsedResponse: any = {
+        overview: "",
+        summary: "",
+        mainConcepts: [],
+        keyPoints: [],
+        definitions: {},
+        quickFacts: [],
+        relatedTopics: [],
+      };
+
       try {
         parsedResponse = JSON.parse(response);
-      } catch {
+      } catch (err) {
+        console.warn(
+          "Could not parse AI response as JSON, using raw text",
+          err,
+        );
         parsedResponse = {
+          overview: "",
           summary: response,
+          mainConcepts: [],
           keyPoints: [
             "Unable to extract key points",
             "Check PDF format and content",
           ],
+          definitions: {},
+          quickFacts: [],
+          relatedTopics: [],
         };
       }
 
       const summary: Summary = {
         id: Date.now().toString(),
         fileName: file.name,
-        summary: parsedResponse.summary,
+        overview: parsedResponse.overview || "",
+        summary: parsedResponse.summary || "",
+        mainConcepts: Array.isArray(parsedResponse.mainConcepts)
+          ? parsedResponse.mainConcepts
+          : [],
         keyPoints: Array.isArray(parsedResponse.keyPoints)
           ? parsedResponse.keyPoints
+          : [],
+        definitions:
+          parsedResponse.definitions &&
+          typeof parsedResponse.definitions === "object"
+            ? parsedResponse.definitions
+            : {},
+        quickFacts: Array.isArray(parsedResponse.quickFacts)
+          ? parsedResponse.quickFacts
+          : [],
+        relatedTopics: Array.isArray(parsedResponse.relatedTopics)
+          ? parsedResponse.relatedTopics
           : [],
         timestamp: new Date(),
       };
@@ -162,24 +220,36 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
         </div>
 
         {file && (
-          <button
-            onClick={handleSummarize}
-            disabled={isLoading}
-            className={`w-full mt-4 px-6 py-3 rounded-lg font-bold transition-all ${
-              isDark
-                ? "bg-[#00e5ff] text-[#0a0a0a] hover:bg-[#00d4e8] disabled:opacity-50"
-                : "bg-cyan-400 text-white hover:bg-cyan-500 disabled:opacity-50"
-            }`}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                Summarizing...
+          <>
+            {extractedText && (
+              <div
+                className={`mt-4 p-3 rounded text-xs ${
+                  isDark ? "bg-[#1a1a1a]" : "bg-gray-100"
+                }`}
+              >
+                <strong>Extracted text preview:</strong>
+                <pre className="whitespace-pre-wrap mt-1">{extractedText}</pre>
               </div>
-            ) : (
-              "Summarize PDF"
             )}
-          </button>
+            <button
+              onClick={handleSummarize}
+              disabled={isLoading}
+              className={`w-full mt-4 px-6 py-3 rounded-lg font-bold transition-all ${
+                isDark
+                  ? "bg-[#00e5ff] text-[#0a0a0a] hover:bg-[#00d4e8] disabled:opacity-50"
+                  : "bg-cyan-400 text-white hover:bg-cyan-500 disabled:opacity-50"
+              }`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  Summarizing...
+                </div>
+              ) : (
+                "Summarize PDF"
+              )}
+            </button>
+          </>
         )}
       </div>
 
@@ -215,7 +285,36 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
                   <div className="flex gap-2 ml-2 flex-wrap justify-end">
                     <button
                       onClick={() => {
-                        const text = `${summary.fileName}\n\n${summary.summary}\n\nKey Points:\n${summary.keyPoints.join("\n")}`;
+                        const lines = [];
+                        lines.push(summary.fileName);
+                        if (summary.overview)
+                          lines.push(`Overview: ${summary.overview}`);
+                        if (summary.summary) lines.push(`\n${summary.summary}`);
+                        if (summary.mainConcepts.length)
+                          lines.push(
+                            `\nMain Concepts:\n${summary.mainConcepts.join("\n")}`,
+                          );
+                        if (summary.keyPoints.length)
+                          lines.push(
+                            `\nKey Points:\n${summary.keyPoints.join("\n")}`,
+                          );
+                        if (Object.keys(summary.definitions).length)
+                          lines.push(
+                            `\nDefinitions:\n${Object.entries(
+                              summary.definitions,
+                            )
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join("\n")}`,
+                          );
+                        if (summary.quickFacts.length)
+                          lines.push(
+                            `\nQuick Facts:\n${summary.quickFacts.join("\n")}`,
+                          );
+                        if (summary.relatedTopics.length)
+                          lines.push(
+                            `\nRelated Topics:\n${summary.relatedTopics.join("\n")}`,
+                          );
+                        const text = lines.join("\n");
                         navigator.clipboard.writeText(text);
                         alert("Summary copied to clipboard!");
                       }}
@@ -230,12 +329,41 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
                     </button>
                     <button
                       onClick={async () => {
-                        const text = `${summary.fileName}\n\n${summary.summary}\n\nKey Points:\n${summary.keyPoints.join("\n")}`;
+                        const lines = [];
+                        lines.push(summary.fileName);
+                        if (summary.overview)
+                          lines.push(`Overview: ${summary.overview}`);
+                        if (summary.summary) lines.push(`\n${summary.summary}`);
+                        if (summary.mainConcepts.length)
+                          lines.push(
+                            `\nMain Concepts:\n${summary.mainConcepts.join("\n")}`,
+                          );
+                        if (summary.keyPoints.length)
+                          lines.push(
+                            `\nKey Points:\n${summary.keyPoints.join("\n")}`,
+                          );
+                        if (Object.keys(summary.definitions).length)
+                          lines.push(
+                            `\nDefinitions:\n${Object.entries(
+                              summary.definitions,
+                            )
+                              .map(([k, v]) => `${k}: ${v}`)
+                              .join("\n")}`,
+                          );
+                        if (summary.quickFacts.length)
+                          lines.push(
+                            `\nQuick Facts:\n${summary.quickFacts.join("\n")}`,
+                          );
+                        if (summary.relatedTopics.length)
+                          lines.push(
+                            `\nRelated Topics:\n${summary.relatedTopics.join("\n")}`,
+                          );
+                        const textToShare = lines.join("\n");
                         if (navigator.share) {
                           try {
                             await navigator.share({
                               title: summary.fileName,
-                              text: text,
+                              text: textToShare,
                             });
                           } catch (err) {
                             console.log("Share cancelled");
@@ -255,7 +383,40 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
                     </button>
                     <button
                       onClick={() => {
-                        const text = `PDF: ${summary.fileName}\nSummarized on: ${summary.timestamp.toLocaleString()}\n\n${summary.summary}\n\nKey Points:\n${summary.keyPoints.map((p) => `- ${p}`).join("\n")}`;
+                        const parts: string[] = [];
+                        parts.push(`PDF: ${summary.fileName}`);
+                        parts.push(
+                          `Summarized on: ${summary.timestamp.toLocaleString()}`,
+                        );
+                        if (summary.overview)
+                          parts.push(`\nOverview: ${summary.overview}`);
+                        if (summary.summary) parts.push(`\n${summary.summary}`);
+                        if (summary.mainConcepts.length)
+                          parts.push(
+                            `\nMain Concepts:\n${summary.mainConcepts.join("\n")}`,
+                          );
+                        if (summary.keyPoints.length)
+                          parts.push(
+                            `\nKey Points:\n${summary.keyPoints.map((p) => `- ${p}`).join("\n")}`,
+                          );
+                        if (Object.keys(summary.definitions).length)
+                          parts.push(
+                            `\nDefinitions:\n${Object.entries(
+                              summary.definitions,
+                            )
+                              .map(([k, v]) => `- ${k}: ${v}`)
+                              .join("\n")}`,
+                          );
+                        if (summary.quickFacts.length)
+                          parts.push(
+                            `\nQuick Facts:\n${summary.quickFacts.join("\n")}`,
+                          );
+                        if (summary.relatedTopics.length)
+                          parts.push(
+                            `\nRelated Topics:\n${summary.relatedTopics.join("\n")}`,
+                          );
+
+                        const text = parts.join("\n");
                         const element = document.createElement("a");
                         element.setAttribute(
                           "href",
@@ -282,6 +443,17 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
                   </div>
                 </div>
 
+                {/* overview text */}
+                {summary.overview && (
+                  <div
+                    className={`mb-1 p-2 rounded ${
+                      isDark ? "bg-[#1a1a1a]" : "bg-gray-50"
+                    }`}
+                  >
+                    <p className="text-sm italic">{summary.overview}</p>
+                  </div>
+                )}
+
                 <div
                   className={`mb-3 p-3 rounded ${
                     isDark ? "bg-[#1a1a1a]" : "bg-gray-50"
@@ -289,6 +461,17 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
                 >
                   <p className="text-sm leading-relaxed">{summary.summary}</p>
                 </div>
+
+                {summary.mainConcepts.length > 0 && (
+                  <div className="mb-3">
+                    <p className="font-semibold text-sm mb-1">Main concepts:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {summary.mainConcepts.map((c, i) => (
+                        <li key={i}>{c}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {summary.keyPoints.length > 0 && (
                   <div>
@@ -302,6 +485,45 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
                           <span className="text-[#00e5ff] font-bold">•</span>
                           <span>{point}</span>
                         </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {Object.keys(summary.definitions).length > 0 && (
+                  <div className="mt-3">
+                    <p className="font-semibold text-sm mb-1">Definitions:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {Object.entries(summary.definitions).map(
+                        ([term, def], idx) => (
+                          <li key={idx}>
+                            <strong>{term}:</strong> {def}
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                {summary.quickFacts.length > 0 && (
+                  <div className="mt-3">
+                    <p className="font-semibold text-sm mb-1">Quick facts:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {summary.quickFacts.map((fact, idx) => (
+                        <li key={idx}>{fact}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {summary.relatedTopics.length > 0 && (
+                  <div className="mt-3">
+                    <p className="font-semibold text-sm mb-1">
+                      Related topics:
+                    </p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {summary.relatedTopics.map((topic, idx) => (
+                        <li key={idx}>{topic}</li>
                       ))}
                     </ul>
                   </div>

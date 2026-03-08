@@ -376,9 +376,7 @@ textarea::placeholder {
 .transition-all {
   transition: all var(--transition-base);
 }
-<<<<<<< Updated upstream
-=======
-=======
+
 /**
  * ============================================
  * PRODUCTION-GRADE THEME SYSTEM
@@ -757,5 +755,3 @@ textarea::placeholder {
 .transition-all {
   transition: all var(--transition-base);
 }
->>>>>>> 4049edd7108b0dbd9dfe4cb974cad7c0a15daaa3
->>>>>>> Stashed changes

@@ -65,6 +65,7 @@ const StudyMaterials: React.FC = () => {
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
             <div className="inline-block mb-3 sm:mb-4">
+              <br />{" "}
               <span className="text-[#00e5ff] font-bold tracking-widest uppercase text-xs sm:text-sm bg-[#00e5ff]/10 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full">
                 📚 Study Materials Library
               </span>
