@@ -137,6 +137,12 @@ Format your response EXACTLY as JSON using these keys:
         };
       }
 
+      if (parsedResponse?.error) {
+        alert(parsedResponse.error);
+        setIsLoading(false);
+        return;
+      }
+
       const summary: Summary = {
         id: Date.now().toString(),
         fileName: file.name,

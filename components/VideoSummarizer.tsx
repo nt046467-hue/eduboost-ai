@@ -138,6 +138,13 @@ const VideoSummarizer: React.FC = () => {
           relatedTopics: [],
         };
       }
+
+      // if the service returned an error object (e.g. missing key)
+      if (parsedResponse?.error) {
+        alert(parsedResponse.error);
+        setIsLoading(false);
+        return;
+      }
     } else {
         // Support multiple video platforms
         if (!videoUrl.trim()) {
