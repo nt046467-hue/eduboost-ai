@@ -6,6 +6,13 @@ import { GoogleGenAI, Type } from "@google/genai";
  * Strictly follows SDK guidelines for initialization and content generation.
  */
 export const getAIResponse = async (userPrompt: string, systemInstruction?: string, isJson: boolean = false) => {
+  // guard against missing key; this is often why "AI isn't working at all"
+  if (!process.env.API_KEY) {
+    const msg = "Missing Gemini API key (set VITE_GEMINI_API_KEY in .env.local)";
+    console.error(msg);
+    return isJson ? JSON.stringify({ error: msg }) : msg;
+  }
+
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const config: any = {

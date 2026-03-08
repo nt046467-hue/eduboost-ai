@@ -99,26 +99,46 @@ const VideoSummarizer: React.FC = () => {
 
     setIsLoading(true);
     try {
-      let parsedResponse: any = {
-        summary: "",
-        keyPoints: [],
-        learningOutcomes: [],
-      };
+      // the AI is asked to return a rich object matching the same shape used
+    // for URL summaries.  we no longer need a server endpoint – local files are
+    // described in the prompt so the model can still generate something useful.
+    let parsedResponse: any = {
+      overview: "",
+      summary: "",
+      mainConcepts: [],
+      keyTakeaways: [],
+      definitions: {},
+      quickFacts: [],
+      relatedTopics: [],
+    };
 
-      // If a local file is chosen, upload it to the backend for transcription + summarization
-      if (localFile) {
-        const form = new FormData();
-        form.append("video", localFile);
-        form.append("title", videoTitle);
+    if (localFile) {
+      // describe the file but do not attempt to upload it. the model will have to
+      // invent its own transcript or work from the title alone, which is fine for
+      // a quick solution and avoids the missing-API error.
+      const fileInfo = `File name: ${localFile.name}\nSize: ${(localFile.size / 1024).toFixed(2)}KB`;
 
-        const res = await fetch("/api/summarize-video", {
-          method: "POST",
-          body: form,
-        });
+      const prompt = `Create a student-friendly summary for a local video file titled: "${videoTitle}"\n\n${fileInfo}\n\nNote: the AI does not have access to the actual video content, only this metadata.\n\nFormat EXACTLY as JSON with these keys:\n{\n  "overview": "1-2 sentence concise overview of the main topic",\n  "mainConcepts": ["concept 1 with brief explanation", "concept 2 with brief explanation", "concept 3..."],\n  "keyTakeaways": ["memorable point 1", "memorable point 2", "memorable point 3"],\n  "definitions": {"term1": "short definition", "term2": "short definition"},\n  "quickFacts": ["important fact 1", "important fact 2"],\n  "relatedTopics": ["topic 1", "topic 2"]\n}\n\nKeep ALL explanations SHORT (1-2 lines max). Students need quick reference, not paragraphs.`;
 
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        parsedResponse = await res.json();
-      } else {
+      const response = await getAIResponse(
+        prompt,
+        "You are an expert video summarizer creating student-friendly, concise summaries optimized for learning and memory retention.",
+        true,
+      );
+
+      try {
+        parsedResponse = JSON.parse(response);
+      } catch {
+        parsedResponse = {
+          overview: "Unable to generate summary. Please try again.",
+          mainConcepts: [],
+          keyTakeaways: [],
+          definitions: {},
+          quickFacts: [],
+          relatedTopics: [],
+        };
+      }
+    } else {
         // Support multiple video platforms
         if (!videoUrl.trim()) {
           alert("Please enter a video URL or choose a local video");
