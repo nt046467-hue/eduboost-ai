@@ -85,6 +85,18 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    // sanity check environment variables
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      console.error("Mail handler missing credentials", {
+        user: process.env.GMAIL_USER,
+        passProvided: !!process.env.GMAIL_APP_PASSWORD,
+      });
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Server misconfiguration" }),
+      };
+    }
+
     const { name, email, message } = JSON.parse(event.body || "{}");
 
     // Validate inputs
@@ -112,6 +124,14 @@ const handler: Handler = async (event) => {
         pass: process.env.GMAIL_APP_PASSWORD,
       },
     });
+    // verify connection configuration early so logs show authentication issues
+    try {
+      await transporter.verify();
+      console.log("Mailer verified successfully");
+    } catch (verifyErr) {
+      console.error("Mailer verification failed", verifyErr);
+      throw verifyErr;
+    }
 
     // Send to your Gmail
     await transporter.sendMail({
@@ -154,7 +174,5 @@ const handler: Handler = async (event) => {
     };
   }
 };
-
-export { handler };
 
 export { handler };
