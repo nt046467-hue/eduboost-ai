@@ -92,8 +92,16 @@ const VideoSummarizer: React.FC = () => {
   };
 
   const handleSummarize = async () => {
-    if (!videoTitle.trim()) {
-      alert("Please enter a video title");
+    // if the user never entered a title but provided a URL, use that so summarizer
+    // still runs and we can show something meaningful in the results.
+    let titleToUse = videoTitle.trim();
+    if (!titleToUse && videoUrl.trim()) {
+      titleToUse = videoUrl.trim();
+      setVideoTitle(titleToUse);
+    }
+
+    if (!titleToUse) {
+      alert("Please enter a video title or URL");
       return;
     }
 
@@ -169,7 +177,7 @@ const VideoSummarizer: React.FC = () => {
           return;
         }
 
-        const prompt = `Create a student-friendly summary for a video titled: "${videoTitle}"
+        const prompt = `Create a student-friendly summary for a video titled: "${titleToUse}"
 
 Format EXACTLY as JSON with these keys:
 {
@@ -206,7 +214,7 @@ Keep ALL explanations SHORT (1-2 lines max). Students need quick reference, not 
       const summary: VideoSummary = {
         id: Date.now().toString(),
         videoUrl: localFile ? previewUrl || localFile.name : videoUrl,
-        title: videoTitle,
+        title: titleToUse,
         overview: parsedResponse.overview || "",
         mainConcepts: Array.isArray(parsedResponse.mainConcepts)
           ? parsedResponse.mainConcepts
@@ -324,13 +332,25 @@ Keep ALL explanations SHORT (1-2 lines max). Students need quick reference, not 
                   setLocalFile(null);
                   setPreviewUrl(null);
 
-                  // Auto-detect and fetch title
+                  // Auto-detect and fetch title.  If the API fails or no title is
+                  // available we’ll fall back to using the raw URL so the summarizer
+                  // still has something to work with.
                   const platform = detectPlatform(url);
                   if (platform) {
-                    const fetchedTitle = await fetchVideoTitle(url);
-                    if (fetchedTitle && !videoTitle) {
-                      setVideoTitle(fetchedTitle);
+                    try {
+                      const fetchedTitle = await fetchVideoTitle(url);
+                      if (fetchedTitle) {
+                        setVideoTitle(fetchedTitle);
+                      } else if (!videoTitle) {
+                        setVideoTitle(url);
+                      }
+                    } catch (err) {
+                      console.warn("Video title fetch error", err);
+                      if (!videoTitle) setVideoTitle(url);
                     }
+                  } else if (!videoTitle) {
+                    // not a recognized platform, use the raw URL
+                    setVideoTitle(url);
                   }
                 }
               }}
