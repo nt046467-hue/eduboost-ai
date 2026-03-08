@@ -80,4 +80,3 @@ const Summarizer: React.FC = () => {
 };
 
 export default Summarizer;
-

@@ -260,4 +260,3 @@ const AIChatbot: React.FC = () => {
 };
 
 export default AIChatbot;
-

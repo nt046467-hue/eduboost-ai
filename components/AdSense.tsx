@@ -84,4 +84,3 @@ const AdSense: React.FC<AdSenseProps> = ({
 };
 
 export default AdSense;
-

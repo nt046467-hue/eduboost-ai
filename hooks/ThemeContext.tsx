@@ -79,4 +79,3 @@ export const useTheme = (): ThemeContextType => {
 };
 
 export type { Theme };
-

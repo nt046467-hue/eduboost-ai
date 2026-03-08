@@ -222,4 +222,3 @@ const FloatingChatBot: React.FC = () => {
 };
 
 export default FloatingChatBot;
-

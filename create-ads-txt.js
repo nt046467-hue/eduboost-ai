@@ -52,4 +52,3 @@ try {
   console.error("❌ Error creating ads.txt file:", error.message);
   process.exit(1);
 }
-
