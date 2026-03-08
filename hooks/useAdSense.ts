@@ -39,3 +39,4 @@ export const shouldPageHaveAds = (pathname: string): boolean => {
 
   return !noAdPages.some((page) => pathname.startsWith(page));
 };
+

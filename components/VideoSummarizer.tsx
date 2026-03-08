@@ -663,3 +663,4 @@ Keep ALL explanations SHORT (1-2 lines max). Students need quick reference, not 
 };
 
 export default VideoSummarizer;
+

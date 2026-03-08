@@ -287,3 +287,4 @@ const StudyMaterials: React.FC = () => {
 };
 
 export default StudyMaterials;
+

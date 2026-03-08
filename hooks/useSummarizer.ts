@@ -90,3 +90,4 @@ export const useVideoSummarizer = () => {
 
   return { summaries, generateSummary };
 };
+

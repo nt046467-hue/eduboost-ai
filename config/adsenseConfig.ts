@@ -119,3 +119,4 @@ export const shouldShowAd = (
   // This ensures professional, non-spammy ad placement
   return ADSENSE_CONFIG.adDensity.respectUserExperience;
 };
+

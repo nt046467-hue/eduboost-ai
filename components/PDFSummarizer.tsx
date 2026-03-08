@@ -316,3 +316,4 @@ Format your response as JSON with keys: "summary", "keyPoints" (array)`;
 };
 
 export default PDFSummarizer;
+

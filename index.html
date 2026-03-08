@@ -157,8 +157,7 @@
       }
     </style>
 
-    <!-- Defer Tailwind CSS to avoid blocking FCP -->
-    <link rel="preload" href="https://cdn.tailwindcss.com" as="script" />
+    <!-- Tailwind CSS is built via PostCSS and bundled by Vite -->
 
     <script type="importmap">
       {
@@ -176,8 +175,7 @@
   <body>
     <div id="root"></div>
 
-    <!-- Load Tailwind asynchronously to not block FCP -->
-    <script defer src="https://cdn.tailwindcss.com"></script>
+
 
     <!-- Defer AdSense loading to not block initial render -->
     <script

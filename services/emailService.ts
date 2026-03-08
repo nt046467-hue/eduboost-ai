@@ -118,3 +118,4 @@ export const sendContactEmail = async (
     throw new Error("Failed to send email");
   }
 };
+
