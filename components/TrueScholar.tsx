@@ -8,12 +8,12 @@ interface TrueScholarProps {
 
 const STATEMENTS = [
   { text: "C is a case-sensitive language.", isTrue: true },
-  { text: "The moon has zero gravity.", isTrue: false },
+  { text: "The moon has zero gravity.", isTrue: false }, // Moon has ~1/6 of Earth's gravity
   { text: "Light travels faster in water than in air.", isTrue: false },
   { text: "Mitochondria is the powerhouse of the cell.", isTrue: true },
   {
     text: "Price and demand usually have a direct relationship.",
-    isTrue: false,
+    isTrue: false, // Inverse relationship (law of demand)
   },
   { text: "Nepal became a Republic in 2008 AD.", isTrue: true },
   { text: "A vacuum allows sound to travel through it.", isTrue: false },

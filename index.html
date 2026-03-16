@@ -14,8 +14,24 @@
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="theme-color" content="#00e5ff" />
 
-    <!-- Google AdSense -->
+    <!-- Google AdSense Meta Tag (Required for Auto Ads) -->
     <meta name="google-adsense-account" content="ca-pub-3896962422851508" />
+
+    <!-- Google AdSense Auto Ads Script (Auto-placement system) -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3896962422851508"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Enable Auto Ads optimization -->
+    <script>
+      window.adsbygoogle = window.adsbygoogle || [];
+      window.adsbygoogle.push({
+        google_ad_client: "ca-pub-3896962422851508",
+        enable_page_level_ads: true,
+      });
+    </script>
 
     <!-- 
       CRITICAL: Theme loader script
@@ -179,12 +195,6 @@
     <!-- Load Tailwind asynchronously to not block FCP -->
     <script defer src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Defer AdSense loading to not block initial render -->
-    <script
-      async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3896962422851508"
-      crossorigin="anonymous"
-    ></script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

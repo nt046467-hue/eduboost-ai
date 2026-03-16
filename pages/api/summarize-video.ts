@@ -35,7 +35,8 @@ export default function handler(
   // placeholder message directing users to use a URL or ensure their API key is
   // configured.
   res.status(200).json({
-    overview: "Unable to generate local video summary. Please provide a URL or ensure the AI key is set.",
+    overview:
+      "Unable to generate local video summary. Please provide a URL or ensure the AI key is set.",
     mainConcepts: [],
     keyTakeaways: [],
     definitions: {},

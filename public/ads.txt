@@ -1,12 +1,13 @@
 # Ads.txt file for EduBoost AI
-# Updated: 2026-01-25
-# Last modified: 1/25/2026
+# Updated: 2026-03-16
+# Last modified: 3/16/2026
 # Status: AUTHORIZED ✅
+# PublisherID: ca-pub-3896962422851508
 
 # ============================================
 # GOOGLE ADSENSE (PRIMARY)
 # ============================================
-google.com, pub-3896962422851508, DIRECT, f08c47fec0942fa0
+google.com, ca-pub-3896962422851508, DIRECT, f08c47fec0942fa0
 
 # ============================================
 # GOOGLE (Authorized Sellers)
@@ -44,5 +45,4 @@ sovrn.com, 403447, RESELLER, fafdf38b16bf6b2b
 # Format: domain, publisher-id, account-type, certification-authority
 # Types: DIRECT, RESELLER
 # Example: example.com, pub-1234567890123456, RESELLER, 1234567890abcdef
-
 

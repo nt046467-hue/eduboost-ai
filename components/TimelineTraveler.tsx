@@ -13,7 +13,25 @@ const MISSIONS = [
       { name: "Unification of Nepal begins", year: 1768 },
       { name: "Sugauli Treaty signed", year: 1816 },
       { name: "Kot Massacre occurs", year: 1846 },
-      { name: "Democratic Era begins (2007 BS)", year: 1951 },
+      { name: "Democratic Era begins", year: 1951 },
+    ],
+  },
+  {
+    title: "Computer Science Timeline",
+    events: [
+      { name: "First computer (ENIAC) built", year: 1946 },
+      { name: "Transistor invented", year: 1947 },
+      { name: "First programming language (FORTRAN)", year: 1957 },
+      { name: "Internet (ARPANET) created", year: 1969 },
+    ],
+  },
+  {
+    title: "Scientific Discoveries",
+    events: [
+      { name: "Newton formulates Laws of Motion", year: 1687 },
+      { name: "Darwin publishes Origin of Species", year: 1859 },
+      { name: "Einstein develops Theory of Relativity", year: 1905 },
+      { name: "Atomic bomb developed", year: 1945 },
     ],
   },
 ];
